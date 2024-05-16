@@ -1,3 +1,5 @@
+#khởi động mtr
+venv\Scripts\activate
 #dùng lênh sau để tạo txt file chứa các thư viện cần cài đặt
 ```
 pip freeze > requirements.txt
