@@ -5,7 +5,7 @@ def initRoutes(app, mysql):
 
     @app.route('/admin/SignUp', methods=['POST'])
     def admin_SignUp():
-        #Lấy dữ liệu từ database
+        #Lấy dữ liệu nhập
         HoTen = request.form['HoTen']
         CCCD = request.form['CCCD']
         GioiTinh = request.form['GioiTinh']
@@ -15,21 +15,34 @@ def initRoutes(app, mysql):
         SDT = request.form['SDT']
         DiaChi = request.form['DiaChi']
         password = request.form['password']
-        id_tvc = request.form['id_tvc'] or None
-        MaQuanHe = request.form['MaQuanHe'] or None
-        NgayPhatSinh = request.form['NgayPhatSinh'] or None
         #Connect database
         cur = mysql.connection.cursor()
         cur.execute(
-            'INSERT INTO THANHVIEN (HoTen,CCCD,GioiTinh,NgayGioSinh,MaQueQuan,MaNgheNghiep,SDT,DiaChi,id_tvc,MaQuanHe,NgayPhatSinh) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',[ HoTen,CCCD,GioiTinh,NgayGioSinh,MaQueQuan,MaNgheNghiep,SDT,DiaChi,id_tvc,MaQuanHe,NgayPhatSinh]
+            'SELECT * FROM USERS WHERE CCCD = %s', [CCCD]
         )
-        cur.execute(
-            'INSERT INTO  USERS (CCCD,password,role) VALUES (%s,%s,user)', [CCCD,password]
+        temp= cur.fetchall()
+        print(temp)
+        if temp !=():
+            return jsonify({'EC': '1', 'EM': 'CCCD đã tồn tại'}), 400 # Chưa có cây gia phả
+        #Thêm thành viên + gia phả
+        else:
+            cur.execute(
+                'INSERT INTO THANHVIEN (HoTen,CCCD,GioiTinh,NgayGioSinh,MaQueQuan,MaNgheNghiep,SDT,DiaChi) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)',[ HoTen,CCCD,GioiTinh,NgayGioSinh,MaQueQuan,MaNgheNghiep,SDT,DiaChi]
             )
-        #results = cur.fetchall()
-        mysql.connection.commit()
-        cur.close()
-        return jsonify('Đăng ký thành công!')
+            cur.execute(
+                'INSERT INTO  USERS (CCCD,password,role) VALUES (%s,%s,user)', [CCCD,password]
+                )
+            #results = cur.fetchall()
+            mysql.connection.commit()
+            cur.execute(
+                'SELECT FROM THANHVIEN tv JOIN USERS u ON tv.id_user=u.id WHERE tv.CCCD = %s', [CCCD]
+            )
+            cur.execute(
+                'SELECT tv.HoTen, tv.id, u.role FROM THANHVIEN tv JOIN USERS u ON tv.id_user=u.id WHERE tv.CCCD = %s', [CCCD]
+            )
+            results = cur.fetchall()
+            cur.close()
+        return jsonify({'EC': '0', 'EM': 'Đăng ký thành công!', 'data': results}), 200
 
     @app.route('/admin/SignIn', methods=['POST'])
     def admin_SignIn ():
@@ -218,8 +231,21 @@ def initRoutes(app, mysql):
         }
         return jsonify(dict)
     
-
-
+    @app.route('/admin/ForgetPassword', methods=['POST'])
+    def admin_ForgetPassword():
+        results = []
+        CCCD = request.form['CCCD']
+        SDT = request.form['SDT']
+        cur = mysql.connection.cursor()
+        cur.execute(
+            'SELECT tv.HoTen, tv.id, u.role FROM THANHVIEN tv JOIN USERS u ON tv.id_user=u.id WHERE tv.CCCD = %s AND tv.SDT = %s', [CCCD,SDT]
+        )
+        results = cur.fetchall()
+        print(results)
+        cur.close()
+        if not results:
+            return jsonify({'EC': '1', 'EM': 'Thông tin không chính xác'}), 404
+        return jsonify({'EC': '0', 'EM': 'Success;', 'data': results}), 200
 
 
     @app.route('/admin/Add', methods=['POST'])
