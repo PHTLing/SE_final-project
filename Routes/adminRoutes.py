@@ -56,7 +56,7 @@ def initRoutes(app, mysql):
     def admin_SignIn ():
         cccd = request.form['CCCD']
         password = request.form['password']
-
+        print(cccd)
         if (len(cccd) !=12 ):
             return jsonify({'EC': '2', 'EM': 'CCCD không hợp lệ'}), 400
         
@@ -66,7 +66,7 @@ def initRoutes(app, mysql):
         )
         results = cur.fetchall()
         if (password != results[0]['password']):
-            return jsonify({'EC': '1', 'EM':'Mật khẩu không đúng'}),401
+            return jsonify({'EC': 1, 'EM':'Mật khẩu không đúng'}),401
         cur.close()
         #Tìm thành viên
         cur = mysql.connection.cursor()
@@ -76,7 +76,8 @@ def initRoutes(app, mysql):
         results = cur.fetchall()
         session['cccd'] = cccd
         # Gửi id
-        return jsonify({'EC': '0', 'EM':'Success', 'data': results}),200
+        print(results)
+        return jsonify({'EC': 0, 'EM':'Success', 'data': results}),200
     
     @app.route('/admin/SignOut/<int:id>', methods=['GET'])
     def admin_SignOut(id):
