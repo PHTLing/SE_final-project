@@ -25,7 +25,15 @@ def initRoutes(app, mysql):
         if temp !=():
             return jsonify({'EC': '1', 'EM': 'CCCD đã tồn tại'}), 400 # Chưa có cây gia phả
         #Thêm thành viên + gia phả
-        else:
+        elif len(CCCD) != 12:
+            return jsonify({'EC': '2', 'EM': 'CCCD không hợp lệ'}), 400
+        elif len(SDT) != 10 or SDT[0] != '0':
+            return jsonify({'EC': '3', 'EM': 'Số điện thoại không hợp lệ'}), 400
+        elif len(password) < 4:
+            return jsonify({'EC': '4', 'EM': 'Mật khẩu phải có ít nhất 4 ký tự'}), 400
+        elif NgayGioSinh > datetime.now():
+            return jsonify({'EC': '5', 'EM': 'Ngày sinh không hợp lệ'}), 400
+        else:            
             cur.execute(
                 'INSERT INTO THANHVIEN (HoTen,CCCD,GioiTinh,NgayGioSinh,MaQueQuan,MaNgheNghiep,SDT,DiaChi) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)',[ HoTen,CCCD,GioiTinh,NgayGioSinh,MaQueQuan,MaNgheNghiep,SDT,DiaChi]
             )
