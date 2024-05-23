@@ -6,15 +6,15 @@ def initRoutes(app, mysql):
     @app.route('/admin/SignUp', methods=['POST'])
     def admin_SignUp():
         #Lấy dữ liệu nhập
-        HoTen = request.form['HoTen']
-        CCCD = request.form['CCCD']
-        GioiTinh = request.form['GioiTinh']
-        NgayGioSinh = request.form['NgayGioSinh']
-        MaQueQuan = request.form['MaQueQuan']
-        MaNgheNghiep = request.form['MaNgheNghiep']
-        SDT = request.form['SDT']
-        DiaChi = request.form['DiaChi']
-        password = request.form['password']
+        HoTen = request.json.get('HoTen')
+        CCCD = request.json.get('CCCD')
+        GioiTinh = request.json.get('GioiTinh')
+        NgayGioSinh = request.json.get('NgayGioSinh')
+        MaQueQuan = request.json.get('MaQueQuan')
+        MaNgheNghiep = request.json.get('MaNgheNghiep')
+        SDT = request.json.get('SDT')
+        DiaChi = request.json.get('DiaChi')
+        password = request.json.get('password')
         #Connect database
         cur = mysql.connection.cursor()
         cur.execute(
@@ -54,9 +54,9 @@ def initRoutes(app, mysql):
 
     @app.route('/admin/SignIn', methods=['POST'])
     def admin_SignIn ():
-        cccd = request.form['CCCD']
-        password = request.form['password']
-        print(cccd)
+        cccd = request.json.get('CCCD')
+        password = request.json.get('password')
+        print(password)
         if (len(cccd) !=12 ):
             return jsonify({'EC': '2', 'EM': 'CCCD không hợp lệ'}), 400
         
@@ -65,18 +65,18 @@ def initRoutes(app, mysql):
             'SELECT * FROM USERS WHERE CCCD = %s ', [cccd]
         )
         results = cur.fetchall()
+        print(results[0]['password'])
         if (password != results[0]['password']):
             return jsonify({'EC': 1, 'EM':'Mật khẩu không đúng'}),401
-        cur.close()
+        
         #Tìm thành viên
-        cur = mysql.connection.cursor()
         cur.execute(
-            'SELECT tv.HoTen, tv.id, u.role FROM THANHVIEN tv JOIN USERS u ON tv.id_user=u.id WHERE tv.CCCD = %s', [cccd]
+            'SELECT tv.HoTen, tv.id, u.role FROM THANHVIEN tv INNER JOIN USERS u ON tv.id_user=u.id WHERE tv.CCCD = %s', [cccd]
         )
         results = cur.fetchall()
         session['cccd'] = cccd
         # Gửi id
-        print(results)
+        print(results[0])
         return jsonify({'EC': 0, 'EM':'Success', 'data': results}),200
     
     @app.route('/admin/SignOut/<int:id>', methods=['GET'])
@@ -92,22 +92,32 @@ def initRoutes(app, mysql):
     @app.route('/admin/Account/<int:id>', methods=['GET'])
     def admin_Account(id):
         #id = request.args.get('id')
+        print("id: ",id)
         cur = mysql.connection.cursor()
         cur.execute(
-            'SELECT * FROM THANHVIEN INNER JOIN USERS ON THANHVIEN.id_user = USERS.id WHERE id_user = %s', [id]
+            'SELECT * FROM THANHVIEN JOIN USERS ON THANHVIEN.id_user = USERS.id WHERE THANHVIEN.id = %s', [id]
         )
         results = cur.fetchall()
         for item in results:
-        # Sử dụng phương thức pop()
-             item.pop("password" , None)
-             item.pop("USERS.id" , None)
-            #del results['password']
+        # Chuỗi ngày gốc
+            original_date_str = item['NgayGioSinh'] # Ngày gốc của
+
+            # Chuyển đổi chuỗi ngày thành đối tượng datetime
+            date_obj = datetime.strptime(original_date_str, '%a, %d %b %Y %H:%M:%S %Z')
+
+            # Định dạng lại ngày thành chuỗi theo định dạng mong muốn
+            formatted_date_str = date_obj.strftime('%-d/%-m/%Y %H:%M')
+
+            item.pop("password" , None)
+            item.pop("USERS.id" , None)
+            #del results['password')
         cur.close()
-        return jsonify({'EC':0, 'EM':'Success', 'data':results})
+        
+        return jsonify({'EC':0, 'EM':'Success', 'data':results[0]})
     
     @app.route('/admin/ChangeAvt/<int:id>', methods=['POST'])
     def admin_ChangeAvt(id):
-        url = request.form['url']
+        url = request.json.get('url')
         cur = mysql.connection.cursor()
         cur.execute(
             'UPDATE THANHVIEN SET Avt = %s WHERE id = %s', [url,id]
@@ -118,7 +128,7 @@ def initRoutes(app, mysql):
     
     @app.route('/admin/ChangeSDT/<int:id>', methods=['POST'])
     def admin_ChangeSDT(id):
-        SDT = request.form['SDT']
+        SDT = request.json.get('SDT')
         cur = mysql.connection.cursor()
         cur.execute(
             'UPDATE THANHVIEN SET SDT = %s WHERE id = %s', [SDT,id]
@@ -141,10 +151,10 @@ def initRoutes(app, mysql):
     def admin_SearchMember():
         results = []
         #Lấy dữ liệu nhập
-        HoTen = request.form['HoTen'] 
-        NamSinh = request.form['NamSinh'] 
-        QueQuan = request.form['QueQuan'] # Frondend gửi kèm mã quê quán
-        DiaChi = request.form['DiaChi'] 
+        HoTen = request.json.get('HoTen') 
+        NamSinh = request.json.get('NamSinh') 
+        QueQuan = request.json.get('QueQuan') # Frondend gửi kèm mã quê quán
+        DiaChi = request.json.get('DiaChi') 
         query = "SELECT * FROM THANHVIEN WHERE 1=1"
         params = []
         if HoTen  != 'null':
@@ -229,7 +239,7 @@ def initRoutes(app, mysql):
             'NgheNghiep': results[1],
             'QuanHe': results[2]
         }
-        return jsonify(dic)
+        return jsonify({'EC':0,'EM': 'success','data':dic})
     
     @app.route('/admin/GetAward', methods=['Get'])
     def admin_getAward():
@@ -264,8 +274,8 @@ def initRoutes(app, mysql):
     @app.route('/admin/ForgetPassword', methods=['POST'])
     def admin_ForgetPassword():
         results = []
-        CCCD = request.form['CCCD']
-        SDT = request.form['SDT']
+        CCCD = request.json.get('CCCD')
+        SDT = request.json.get('SDT')
         cur = mysql.connection.cursor()
         cur.execute(
             'SELECT tv.HoTen, tv.id, u.role FROM THANHVIEN tv JOIN USERS u ON tv.id_user=u.id WHERE tv.CCCD = %s AND tv.SDT = %s', [CCCD,SDT]
@@ -283,18 +293,18 @@ def initRoutes(app, mysql):
         cur.execute(
             'SELECT * FROM QUEQUAN ', [id]
         )
-        HoTen = request.form['HoTen']
-        CCCD = request.form['CCCD']
-        GioiTinh = request.form['GioiTinh'] or None
-        NgayGioSinh = request.form['NgayGioSinh'] or None
-        MaQueQuan = request.form['MaQueQuan'] or None #FE đính kèm
-        MaNgheNghiep = request.form['MaNgheNghiep'] or None #FE đính kèm
-        SDT = request.form['SDT'] 
-        DiaChi = request.form['DiaChi'] or None
-        id_tvc = request.form['id_tvc'] 
-        MaQuanHe = request.form['MaQuanHe'] #FE đính kèm
-        NgayPhatSinh = request.form['NgayPhatSinh'] or None
-        ThanhVien = request.form['ThanhVienCu'] or None
+        HoTen = request.json.get('HoTen')
+        CCCD = request.json.get('CCCD')
+        GioiTinh = request.json.get('GioiTinh') or None
+        NgayGioSinh = request.json.get('NgayGioSinh') or None
+        MaQueQuan = request.json.get('MaQueQuan') or None #FE đính kèm
+        MaNgheNghiep = request.json.get('MaNgheNghiep') or None #FE đính kèm
+        SDT = request.json.get('SDT') 
+        DiaChi = request.json.get('DiaChi') or None
+        id_tvc = request.json.get('id_tvc') 
+        MaQuanHe = request.json.get('MaQuanHe') #FE đính kèm
+        NgayPhatSinh = request.json.get('NgayPhatSinh') or None
+        ThanhVien = request.json.get('ThanhVienCu') or None
         
         cur = mysql.connection.cursor()
         # cur.execute(
@@ -316,7 +326,7 @@ def initRoutes(app, mysql):
     @app.route('/admin/SuggestName', methods=['POST'])
     def admin_SuggestName():
         results = []
-        HoTen = request.form['HoTen']
+        HoTen = request.json.get('HoTen')
         cur = mysql.connection.cursor()
         cur.execute(
             'SELECT id, HoTen, NgayGioSinh, GioiTinh FROM THANHVIEN WHERE HoTen LIKE %s', [f"%{HoTen}%"]
@@ -328,9 +338,9 @@ def initRoutes(app, mysql):
 
     @app.route('/admin/RecordDeath', methods=['POST'])
     def admin_RecordDeath():
-        MaDiaDiemMaiTang = request.form['MaDiaDiemMaiTang']
-        MaNguyenNhan = request.form['MaNguyenNhan']
-        id = request.form['id']
+        MaDiaDiemMaiTang = request.json.get('MaDiaDiemMaiTang')
+        MaNguyenNhan = request.json.get('MaNguyenNhan')
+        id = request.json.get('id')
         cur = mysql.connection.cursor()
         cur.execute(
             'SELECT id,HoTen,GioiTinh,NgayGioSinh FROM THANHVIEN WHERE id = %s', [id]
@@ -338,7 +348,7 @@ def initRoutes(app, mysql):
         results = cur.fetchone()
         if results is None:
             return jsonify({'EC': '1', 'EM': 'Không tìm thấy thành viên'}), 404
-        NgayGioMat = request.form['NgayGioMat']
+        NgayGioMat = request.json.get('NgayGioMat')
         cur.execute(
             'UPDATE THANHVIEN SET Status = 1 WHERE id = %s', [id]
         )
