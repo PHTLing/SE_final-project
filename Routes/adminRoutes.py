@@ -542,3 +542,62 @@ def initRoutes(app, mysql):
         print(data)
         return jsonify( data),200
         
+    @app.route('/admin/Update', methods=['GET'])
+    def admin_Update():
+        id = request.args.get('id')
+        HoTen = request.args.get('HoTen')
+        GioiTinh = request.args.get('GioiTinh')
+        SDT = request.args.get('SDT')
+        NgayGioSinh = request.args.get('NgayGioSinh')
+        MaQueQuan = request.args.get('MaQueQuan')
+        MaNgheNghiep = request.args.get('MaNgheNghiep')
+        CCCD = request.args.get('CCCD')
+        SDT = request.args.get('SDT')
+        DiaChi = request.args.get('DiaChi')
+
+        cur = mysql.connection.cursor()
+        if HoTen != '':
+            cur.execute(
+            'UPDATE THANHVIEN SET HoTen = %s WHERE  id= %s' , [HoTen,id]
+            )
+        if GioiTinh != '':
+            cur.execute(
+            'UPDATE THANHVIEN SET GioiTinh = %s WHERE  id= %s' , [GioiTinh,id]
+            )
+        if SDT != '':
+            cur.execute(
+            'UPDATE THANHVIEN SET SDT = %s WHERE  id= %s' , [SDT,id]
+            )
+        if NgayGioSinh != '':
+            cur.execute(
+            'UPDATE THANHVIEN SET NgayGioSinh = %s WHERE  id= %s' , [NgayGioSinh,id]
+            )
+        if MaQueQuan != '':
+            cur.execute(
+            'UPDATE THANHVIEN SET MaQueQuan = %s WHERE  id= %s' , [MaQueQuan,id]
+            )
+        if MaNgheNghiep != '':
+            cur.execute(
+            'UPDATE THANHVIEN SET MaNgheNghiep = %s WHERE id = %s', [MaNgheNghiep, id]
+            )
+        if CCCD != '':
+            cur.excute(
+            'UPDATE THANHVIEN SET CCCD = %s WHERE id = %s', [CCCD, id]
+            )
+        if SDT != '':
+            cur.excute(
+            'UPDATE THANHVIEN SET SDT = %s WHERE id = %s', [SDT, id]
+            )
+        if DiaChi != '':
+            cur.excute(
+            'UPDATE THANHVIEN SET DiaChi = %s WHERE id = %s', [DiaChi, id]
+            )
+        mysql.connection.commit()
+        cur.excute(
+            'SELECT * FROM THANHVIEN WHERE id = %s', [id]
+        )
+        results = cur.fetchall()
+        cur.close()
+        return jsonify({'EC':0, 'EM':'Update successed!', 'data':results[0]}),200
+    
+    
