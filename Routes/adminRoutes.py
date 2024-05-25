@@ -23,16 +23,16 @@ def initRoutes(app, mysql):
         temp= cur.fetchall()
         print(temp)
         if temp !=():
-            return jsonify({'EC': '1', 'EM': 'CCCD đã tồn tại'}), 400 # Chưa có cây gia phả
+            return jsonify({'EC': 1, 'EM': 'CCCD đã tồn tại'}), 400 # Chưa có cây gia phả
         #Thêm thành viên + gia phả
         elif len(CCCD) != 12:
-            return jsonify({'EC': '2', 'EM': 'CCCD không hợp lệ'}), 400
-        elif len(SDT) != 10 or SDT[0] != '0':
-            return jsonify({'EC': '3', 'EM': 'Số điện thoại không hợp lệ'}), 400
+            return jsonify({'EC': 2, 'EM': 'CCCD không hợp lệ'}), 400
+        elif len(SDT) != 10 or SDT[0] != 0:
+            return jsonify({'EC': 3, 'EM': 'Số điện thoại không hợp lệ'}), 400
         elif len(password) < 4:
-            return jsonify({'EC': '4', 'EM': 'Mật khẩu phải có ít nhất 4 ký tự'}), 400
+            return jsonify({'EC': 4, 'EM': 'Mật khẩu phải có ít nhất 4 ký tự'}), 400
         elif NgayGioSinh > datetime.now():
-            return jsonify({'EC': '5', 'EM': 'Ngày sinh không hợp lệ'}), 400
+            return jsonify({'EC': 5, 'EM': 'Ngày sinh không hợp lệ'}), 400
         else:            
             cur.execute(
                 'INSERT INTO THANHVIEN (HoTen,CCCD,GioiTinh,NgayGioSinh,MaQueQuan,MaNgheNghiep,SDT,DiaChi) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)',[ HoTen,CCCD,GioiTinh,NgayGioSinh,MaQueQuan,MaNgheNghiep,SDT,DiaChi]
@@ -50,7 +50,7 @@ def initRoutes(app, mysql):
             )
             results = cur.fetchall()
             cur.close()
-        return jsonify({'EC': '0', 'EM': 'Đăng ký thành công!', 'data': results}), 200
+        return jsonify({'EC': 0, 'EM': 'Đăng ký thành công!', 'data': results}), 200
 
     @app.route('/admin/SignIn', methods=['POST'])
     def admin_SignIn ():
@@ -58,7 +58,7 @@ def initRoutes(app, mysql):
         password = request.json.get('password')
         print(password)
         if (len(cccd) !=12 ):
-            return jsonify({'EC': '2', 'EM': 'CCCD không hợp lệ'}), 400
+            return jsonify({'EC': 2, 'EM': 'CCCD không hợp lệ'}), 400
         
         cur = mysql.connection.cursor()
         cur.execute(
@@ -87,7 +87,7 @@ def initRoutes(app, mysql):
         )
         results = cur.fetchall()
         session.pop('result', None)
-        return jsonify({'EC': '0', 'EM':'Đăng xuất thành công'}),200
+        return jsonify({'EC': 0, 'EM':'Đăng xuất thành công'}),200
 
     @app.route('/admin/Account/<int:id>', methods=['GET'])
     def admin_Account(id):
@@ -294,44 +294,8 @@ def initRoutes(app, mysql):
         print(results)
         cur.close()
         if not results:
-            return jsonify({'EC': '1', 'EM': 'Thông tin không chính xác'}), 404
-        return jsonify({'EC': '0', 'EM': 'Success;', 'data': results}), 200
-
-    @app.route('/admin/Add', methods=['POST'])
-    def admin_Add(id):
-        cur = mysql.connection.cursor()
-        cur.execute(
-            'SELECT * FROM QUEQUAN ', [id]
-        )
-        HoTen = request.json.get('HoTen')
-        CCCD = request.json.get('CCCD')
-        GioiTinh = request.json.get('GioiTinh') or None
-        NgayGioSinh = request.json.get('NgayGioSinh') or None
-        MaQueQuan = request.json.get('MaQueQuan') or None #FE đính kèm
-        MaNgheNghiep = request.json.get('MaNgheNghiep') or None #FE đính kèm
-        SDT = request.json.get('SDT') 
-        DiaChi = request.json.get('DiaChi') or None
-        id_tvc = request.json.get('id_tvc') 
-        MaQuanHe = request.json.get('MaQuanHe') #FE đính kèm
-        NgayPhatSinh = request.json.get('NgayPhatSinh') or None
-        ThanhVien = request.json.get('ThanhVienCu') or None
-        
-        cur = mysql.connection.cursor()
-        # cur.execute(
-        #    'SELECT MaQueQuan FROM QUEQUAN WHERE TenQueQuan= %s', [QueQuan]
-        # )
-        # MaQueQuan = cur.fetchone()['MaQueQuan']
-        # cur.execute(
-        #     'SELECT MaNgheNghiep FROM NGHENGHIEP WHERE TenNgheNghiep= %s', [NgheNghiep]
-        # )
-        # MaNgheNghiep = cur.fetchone()['MaNgheNghiep']
-        # cur.execute(
-        cur.execute(
-            'INSERT INTO THANHVIEN (HoTen,CCCD,GioiTinh,NgayGioSinh,MaQueQuan,MaNgheNghiep,SDT,DiaChi,id_tvc,MaQuanHe,NgayPhatSinh,id_user) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',[ HoTen,CCCD,GioiTinh,NgayGioSinh,MaQueQuan,MaNgheNghiep,SDT,DiaChi,id_tvc,MaQuanHe,NgayPhatSinh,id_user]
-        )
-        mysql.connection.commit()
-        cur.close()
-        return jsonify('Thêm thành viên thành công!')
+            return jsonify({'EC': 1, 'EM': 'Thông tin không chính xác'}), 404
+        return jsonify({'EC': 0, 'EM': 'Success;', 'data': results}), 200
     
     @app.route('/admin/Search', methods=['POST'])
     def admin_Search():
@@ -346,9 +310,9 @@ def initRoutes(app, mysql):
             results = cur.fetchall()
         if results is None:
             print("Rỗng: ",results)
-            return jsonify({'EC': '1', 'EM': 'Không tìm thấy thành viên', 'data': []}), 404
+            return jsonify({'EC': 1, 'EM': 'Không tìm thấy thành viên', 'data': []}), 404
         print("Có: ",results)
-        return jsonify({'EC':'0','EM':'Found!','data':results})
+        return jsonify({'EC':0,'EM':'Found!','data':results})
 
     @app.route('/admin/RecordDeath', methods=['POST'])
     def admin_RecordDeath():
@@ -361,7 +325,7 @@ def initRoutes(app, mysql):
         )
         results = cur.fetchone()
         if results is None:
-            return jsonify({'EC': '1', 'EM': 'Không tìm thấy thành viên'}), 404
+            return jsonify({'EC': 1, 'EM': 'Không tìm thấy thành viên'}), 404
         NgayGioMat = request.json.get('NgayGioMat')
         cur.execute(
             'UPDATE THANHVIEN SET Status = 1 WHERE id = %s', [id]
@@ -370,7 +334,7 @@ def initRoutes(app, mysql):
             'INSERT INTO KETTHUC (MaThanhVien,NgayGioMat,MaNguyenNhan, MaDiaDiemMaiTang) VALUES (%s,%s,%s,%s)',[id,NgayGioMat,MaNguyenNhan,MaDiaDiemMaiTang]
         )
         mysql.connection.commit()
-        return jsonify({'EC': '0', 'EM':'Ghi nhận thành công'}), 200
+        return jsonify({'EC': 0, 'EM':'Ghi nhận thành công'}), 200
     
     @app.route('/admin/AddQueQuan', methods=['POST'])
     def admin_AddQueQuan():
@@ -599,5 +563,145 @@ def initRoutes(app, mysql):
         results = cur.fetchall()
         cur.close()
         return jsonify({'EC':0, 'EM':'Update successed!', 'data':results[0]}),200
+    
+    @app.route('/admin/Add', methods=['POST'])
+    def admin_Add():
+        id = request.json.get('id')
+        HoTen = request.json.get('HoTen')
+        CCCD = request.json.get('CCCD')
+        GioiTinh = request.json.get('GioiTinh') 
+        NgayGioSinh = request.json.get('NgayGioSinh') 
+        MaQueQuan = request.json.get('MaQueQuan')
+        MaNgheNghiep = request.json.get('MaNgheNghiep') 
+        SDT = request.json.get('SDT') 
+        DiaChi = request.json.get('DiaChi') 
+        id_tvc = request.json.get('id_tvc') 
+        MaQuanHe = request.json.get('MaQuanHe')
+        NgayPhatSinh = request.json.get('NgayPhatSinh') 
+        password = request.json.get('password')
+        #Kiểm tra CCCD đã tồn tại chưa
+        cur = mysql.connection.cursor()
+        if len(CCCD) != 12:
+            return jsonify({'EC': 2, 'EM': 'CCCD không hợp lệ'}), 400
+        else:
+            cur.execute(
+                'SELECT * FROM USERS WHERE CCCD = %s', [CCCD]
+            )
+            temp= cur.fetchall()
+            if temp !=():
+                return jsonify({'EC': 1, 'EM': 'CCCD đã tồn tại'}), 400 #Đã tồn tại tài khoản
+            else:
+                #Tạo tài khoản
+                cur.execute(
+                    'INSERT INTO USERS (CCCD,password,role) VALUES (%s,%s,user)', [CCCD,'1234']
+                )
+                cur.connection.commit()
+                #Lấy id tài khoản
+                cur.execute(
+                    'SELECT id FROM USERS WHERE CCCD = %s', [CCCD]
+                )
+                id_user = cur.fetchone()['id']
+                #Lấy thông tin đời trước
+                cur.execute(
+                    'SELECT * FROM THANHVIEN WHERE id = %s', [id_tvc]
+                )
+                temp = cur.fetchall()
+                if temp is ():
+                    return jsonify({'EC': 3, 'EM': 'Không tìm thấy đời trước'}), 404
+                elif (temp[0]['NgayGioSinh'] < NgayGioSinh and MaQuanHe == 2): # con nhỏ hơn cha/mẹ
+                    return jsonify({'EC': 4, 'EM': 'Ngày sinh không hợp lệ'}), 400
+                elif (MaQuanHe == 1 and temp[0]['GioiTinh'] == GioiTinh): # Cha/Mẹ phải khác giới
+                    return jsonify({'EC': 5, 'EM': 'Giới tính không hợp lệ'}), 400
+                elif (MaQuanHe == 1): 
+                    Doi = temp[0]['Doi']
+                elif (MaQuanHe == 2):
+                    Doi= temp[0]['Doi'] + 1
+                #Thêm thành viên
+                cur.execute(
+                    'INSERT INTO THANHVIEN (HoTen,CCCD,Doi,GioiTinh,NgayGioSinh,MaQueQuan,MaNgheNghiep,SDT,DiaChi,id_tvc,MaQuanHe,NgayPhatSinh,id_user) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',[ HoTen,CCCD,Doi,GioiTinh,NgayGioSinh,MaQueQuan,MaNgheNghiep,SDT,DiaChi,id_tvc,MaQuanHe,NgayPhatSinh,id_user]
+                )
+                mysql.connection.commit()
+                cur.execute(
+                    'SELECT * FROM THANHVIEN WHERE id = %s', [id]
+                )
+                results = cur.fetchall()
+        return jsonify({'EC':0,'EM':'Thêm thành viên thành công!', 'data':results}),200
+    
+    @app.route('/admin/DeleteAward', methods=['POST'])
+    def admin_DeleteAward():
+        id = request.json.get('id')
+        cur = mysql.connection.cursor()
+        cur.execute(
+            'DELETE FROM THANHTICH WHERE MaThanhVien = %s', [id]
+        )
+        mysql.connection.commit()
+        cur.close()
+        return jsonify({'EC': 0, 'EM':'Xóa thành công!'}),200
+    
+    @app.route('/admin/DeleteEnd', methods=['POST'])
+    def admin_DeleteEnd():
+        id = request.json.get('id')
+        cur = mysql.connection.cursor()
+        cur.execute(
+            'DELETE FROM KETTHUC WHERE MaThanhVien = %s', [id]
+        )
+        mysql.connection.commit()
+        cur.close()
+        return jsonify({'EC': 0, 'EM':'Xóa thành công!'}),200
+    
+    @app.route('/admin/DeleteQueQuan', methods=['POST'])
+    def admin_DeleteQueQuan():
+        id = request.json.get('id')
+        cur = mysql.connection.cursor()
+        cur.execute(
+            'DELETE FROM QUEQUAN WHERE MaQueQuan = %s', [id]
+        )
+        mysql.connection.commit()
+        cur.close()
+        return jsonify({'EC': 0, 'EM':'Xóa thành công!'}),200
+    
+    @app.route('/admin/DeleteNgheNghiep', methods=['POST'])
+    def admin_DeleteNgheNghiep():
+        id = request.json.get('id')
+        cur = mysql.connection.cursor()
+        cur.execute(
+            'DELETE FROM NGHENGHIEP WHERE MaNgheNghiep = %s', [id]
+        )
+        mysql.connection.commit()
+        cur.close()
+        return jsonify({'EC': 0, 'EM':'Xóa thành công!'}),200
+    
+    @app.route('/admin/DeleteNguyenNhan', methods=['POST'])
+    def admin_DeleteNguyenNhan():
+        id = request.json.get('id')
+        cur = mysql.connection.cursor()
+        cur.execute(
+            'DELETE FROM NGUYENNHAN WHERE MaNguyenNhan = %s', [id]
+        )
+        mysql.connection.commit()
+        cur.close()
+        return jsonify({'EC': 0, 'EM':'Xóa thành công!'}),200
+    
+    @app.route('/admin/DeleteDiaDiemMaiTang', methods=['POST'])
+    def admin_DeleteDiaDiemMaiTang():
+        id = request.json.get('id')
+        cur = mysql.connection.cursor()
+        cur.execute(
+            'DELETE FROM DIADIEMMAITANG WHERE MaDiaDiemMaiTang = %s', [id]
+        )
+        mysql.connection.commit()
+        cur.close()
+        return jsonify({'EC': 0, 'EM':'Xóa thành công!'}),200
+    
+    @app.route('/admin/DeleteLoaiThanhTich', methods=['POST'])
+    def admin_DeleteLoaiThanhTich():
+        id = request.json.get('id')
+        cur = mysql.connection.cursor()
+        cur.execute(
+            'DELETE FROM LOAITHANHTICH WHERE MaLoaiThanhTich = %s', [id]
+        )
+        mysql.connection.commit()
+        cur.close()
+        return jsonify({'EC': 0, 'EM':'Xóa thành công!'}),200
     
     
