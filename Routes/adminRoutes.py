@@ -314,8 +314,8 @@ def initRoutes(app, mysql):
         print("Có: ",results)
         return jsonify({'EC':0,'EM':'Found!','data':results})
 
-    @app.route('/admin/RecordDeath', methods=['POST'])
-    def admin_RecordDeath():
+    @app.route('/admin/RecordEnd', methods=['POST'])
+    def admin_RecordEnd():
         MaDiaDiemMaiTang = request.json.get('MaDiaDiemMaiTang')
         MaNguyenNhan = request.json.get('MaNguyenNhan')
         id = request.json.get('id')
@@ -352,9 +352,37 @@ def initRoutes(app, mysql):
             'INSERT INTO QUEQUAN (TenQueQuan) VALUES (%s)', [TenQueQuan]
         )
         mysql.connection.commit()
+        cur.execute(
+            'SELECT * FROM QUEQUAN WHERE TenQueQuan = %s', [TenQueQuan]
+        )
+        results = cur.fetchall()
         cur.close()
-        return jsonify({'EC':0, 'EM':'Thêm quê quán thành công!'}),200
+        return jsonify({'EC':0, 'EM':'Thêm quê quán thành công!', 'data':results}),200
     
+    @app.route('/admin/AddAward', methods=['POST'])
+    def admin_AddAward():
+        id = request.json.get('id')
+        MaLoaiThanhTich = request.json.get('MaLoaiThanhTich')
+        NgayPhatSinh = request.json.get('NgayPhatSinh')
+        print(id, MaLoaiThanhTich, NgayPhatSinh)
+        cur = mysql.connection.cursor()
+        if id == '':
+            return jsonify({'EC': 1, 'EM': 'Không tìm thấy thành viên'}), 404
+        else:
+            cur.execute(
+                'SELECT * FROM THANHVIEN WHERE id = %s', [id]
+            )
+            results = cur.fetchall()
+         
+            if results is None:
+                return jsonify({'EC': 1, 'EM': 'Không tìm thấy thành viên'}), 404
+            else:
+                cur.execute(
+                    'INSERT INTO THANHTICH (MaThanhVien,MaLoaiThanhTich,NgayPhatSinh) VALUES (%s,%s,%s)',[id,MaLoaiThanhTich,NgayPhatSinh]
+                )
+                mysql.connection.commit()
+        return jsonify({'EC': 0, 'EM':'Thêm thành tích thành công!'}),200
+
     @app.route('/admin/AddNgheNghiep', methods=['POST'])
     def admin_AddNgheNghiep():
         TenNgheNghiep = request.json.get('TenNgheNghiep')
@@ -370,7 +398,7 @@ def initRoutes(app, mysql):
         )
         mysql.connection.commit()
         cur.execute(
-            'SELECT * FROM NGHENGHIEP '
+            'SELECT * FROM NGHENGHIEP WHERE TenNgheNghiep = %s', [TenNgheNghiep]
         )
         results = cur.fetchall()
         cur.close()
@@ -391,7 +419,7 @@ def initRoutes(app, mysql):
         )
         mysql.connection.commit()
         cur.execute(
-            'SELECT * FROM NGUYENNHAN '
+            'SELECT * FROM NGUYENNHAN WHERE TenNguyenNhan = %s', [TenNguyenNhan]
         )
         results = cur.fetchall()
         cur.close()
@@ -412,7 +440,7 @@ def initRoutes(app, mysql):
         )
         mysql.connection.commit()
         cur.execute(
-            'SELECT * FROM DIADIEMMAITANG '
+            'SELECT * FROM DIADIEMMAITANG  WHERE TenDiaDiemMaiTang = %s', [TenDiaDiemMaiTang]
         )
         results = cur.fetchall()
         cur.close()
@@ -421,6 +449,7 @@ def initRoutes(app, mysql):
     @app.route('/admin/AddLoaiThanhTich', methods=['POST'])
     def admin_AddLoaiThanhTich():
         TenLoaiThanhTich = request.json.get('TenLoaiThanhTich')
+        print(TenLoaiThanhTich)
         cur = mysql.connection.cursor()
         #Kiểm tra tên loại thành tích đã tồn tại chưa
         cur.execute(
@@ -433,7 +462,7 @@ def initRoutes(app, mysql):
         )
         mysql.connection.commit()
         cur.execute(
-            'SELECT * FROM LOAITHANHTICH '
+            'SELECT * FROM LOAITHANHTICH WHERE TenLoaiThanhTich = %s', [TenLoaiThanhTich]
         )
         results = cur.fetchall()
         cur.close()
@@ -448,7 +477,7 @@ def initRoutes(app, mysql):
         results = cur.fetchall()
         data=[]
         for i,item in enumerate(results):
-            print ("=====================",i,"=====================")
+            #print ("=====================",i,"=====================")
             temp = {}
             temp['name'] = item['HoTen']
             print(item['HoTen'])
@@ -472,8 +501,7 @@ def initRoutes(app, mysql):
                 )
                 partner_2 = cur.fetchall()
                 print(partner_2)
-                if partner_2 is (): 1==1
-                else:
+                if partner_2 is not (): 
                     temp['pids'].append(partner_2[0]['id'])   
             else:
                 temp['pids'].append(partner_1[0]['id'])
@@ -506,19 +534,18 @@ def initRoutes(app, mysql):
         print(data)
         return jsonify( data),200
         
-    @app.route('/admin/Update', methods=['GET'])
+    @app.route('/admin/UpdateInfor', methods=['POST'])
     def admin_Update():
-        id = request.args.get('id')
-        HoTen = request.args.get('HoTen')
-        GioiTinh = request.args.get('GioiTinh')
-        SDT = request.args.get('SDT')
-        NgayGioSinh = request.args.get('NgayGioSinh')
-        MaQueQuan = request.args.get('MaQueQuan')
-        MaNgheNghiep = request.args.get('MaNgheNghiep')
-        CCCD = request.args.get('CCCD')
-        SDT = request.args.get('SDT')
-        DiaChi = request.args.get('DiaChi')
-
+        id = request.json.get('id')
+        HoTen = request.json.get('HoTen')
+        GioiTinh = request.json.get('GioiTinh')
+        SDT = request.json.get('SDT')
+        NgayGioSinh = request.json.get('NgayGioSinh')
+        MaQueQuan = request.json.get('MaQueQuan')
+        MaNgheNghiep = request.json.get('MaNgheNghiep')
+        CCCD = request.json.get('CCCD')
+        DiaChi = request.json.get('DiaChi')
+        print('id', id, 'Tên: ', HoTen, 'Giới tính:', GioiTinh, 'SDT:', SDT, 'Sinh:', NgayGioSinh, 'Quê:', MaQueQuan, 'Nghề:', MaNgheNghiep, 'CCCD:', CCCD, 'Địa chỉ:',DiaChi)
         cur = mysql.connection.cursor()
         if HoTen != '':
             cur.execute(
@@ -545,27 +572,27 @@ def initRoutes(app, mysql):
             'UPDATE THANHVIEN SET MaNgheNghiep = %s WHERE id = %s', [MaNgheNghiep, id]
             )
         if CCCD != '':
-            cur.excute(
+            cur.execute(
             'UPDATE THANHVIEN SET CCCD = %s WHERE id = %s', [CCCD, id]
             )
         if SDT != '':
-            cur.excute(
+            cur.execute(
             'UPDATE THANHVIEN SET SDT = %s WHERE id = %s', [SDT, id]
             )
         if DiaChi != '':
-            cur.excute(
+            cur.execute(
             'UPDATE THANHVIEN SET DiaChi = %s WHERE id = %s', [DiaChi, id]
             )
         mysql.connection.commit()
-        cur.excute(
+        cur.execute(
             'SELECT * FROM THANHVIEN WHERE id = %s', [id]
         )
         results = cur.fetchall()
         cur.close()
-        return jsonify({'EC':0, 'EM':'Update successed!', 'data':results[0]}),200
+        return jsonify({'EC':0, 'EM':'Update successed!', 'data':results}),200
     
-    @app.route('/admin/Add', methods=['POST'])
-    def admin_Add():
+    @app.route('/admin/AddMember', methods=['POST'])
+    def admin_AddMember():
         id = request.json.get('id')
         HoTen = request.json.get('HoTen')
         CCCD = request.json.get('CCCD')
@@ -704,4 +731,57 @@ def initRoutes(app, mysql):
         cur.close()
         return jsonify({'EC': 0, 'EM':'Xóa thành công!'}),200
     
+    @app.route('/admin/BaoCaoTangGiam', methods=['POST'])
+    def admin_BaoCaoTangGiam():
+        start_year= request.json.get('NamBatDau')
+        end_year = request.json.get('NamKetThuc')
+        start_year = int(start_year)
+        end_year = int(end_year)
+        cur = mysql.connection.cursor()
+        cur.execute(
+            'SELECT Year(tv.NgayGioSinh) as Nam, COUNT(*) AS SoLuongSinh FROM THANHVIEN tv WHERE Year(tv.NgayGioSinh) BETWEEN %s AND %s GROUP BY Year(tv.NgayGioSinh) ', [start_year, end_year]
+        )
+        Birth = cur.fetchall()
+        
+        cur.execute(
+            'SELECT Year(NgayPhatSinh) as Nam, COUNT(*) AS SoLuongKetHon FROM THANHVIEN WHERE Year(NgayPhatSinh) BETWEEN %s AND %s AND MaQuanHe=1 GROUP BY Year(NgayPhatSinh)', [start_year, end_year]
+        )
+        Marriage = cur.fetchall()
+        cur.execute(
+            'SELECT Year(NgayPhatSinh) as Nam, COUNT(*) AS SoLuongMat FROM THANHVIEN WHERE Year(NgayPhatSinh) BETWEEN %s AND %s AND TrangThai = 1 GROUP BY Year(NgayPhatSinh)', [start_year, end_year]
+        )
+        Death = cur.fetchall()
+        
+        result = {year: {'Nam': year, 'SoLuongSinh': 0, 'SoLuongKetHon': 0, 'SoLuongMat': 0} for year in range(start_year, end_year + 1)}
+
+        for row in Birth:
+            year = row['Nam']
+            if year in result:
+                result[year]['SoLuongSinh'] = row['SoLuongSinh']
+
+        for row in Marriage:
+            year = row['Nam']
+            if year in result:
+                result[year]['SoLuongKetHon'] = row['SoLuongKetHon']
+
+        for row in Death:
+            year = row['Nam']
+            if year in result:
+                result[year]['SoLuongMat'] = row['SoLuongMat']
+            # Chuyển kết quả từ dictionary sang list
+        final_result = list(result.values())
+
+        return jsonify({'EC': 0, 'EM': 'Success', 'data': final_result}), 200
     
+    @app.route('/admin/BaoCaoThanhTich', methods=['POST'])
+    def admin_BaoCaoThanhTich():
+        start_year= request.json.get('NamBatDau')
+        end_year = request.json.get('NamKetThuc')
+        
+        cur = mysql.connection.cursor()
+        cur.execute(
+            'SELECT tt.MaLoaiThanhTich, ltt.TenLoaiThanhTich, COUNT(*) AS SoLuongThanhTich FROM THANHTICH tt INNER JOIN LOAITHANHTICH ltt ON tt.MaLoaiThanhTich = ltt.MaLoaiThanhTich WHERE Year(tt.NgayPhatSinh) BETWEEN %s AND %s GROUP BY tt.MaLoaiThanhTich', [start_year, end_year] 
+        )
+        results = cur.fetchall()
+        cur.close()
+        return jsonify({'EC':0, 'EM':'Success', 'data': results}),200
