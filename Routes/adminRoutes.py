@@ -38,7 +38,7 @@ def initRoutes(app, mysql):
                 'INSERT INTO THANHVIEN (HoTen,CCCD,GioiTinh,NgayGioSinh,MaQueQuan,MaNgheNghiep,SDT,DiaChi) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)',[ HoTen,CCCD,GioiTinh,NgayGioSinh,MaQueQuan,MaNgheNghiep,SDT,DiaChi]
             )
             cur.execute(
-                'INSERT INTO  USERS (CCCD,password,role) VALUES (%s,%s,user)', [CCCD,password]
+                'INSERT INTO  USERS (CCCD,password,MaVaiTro) VALUES (%s,%s,2)', [CCCD,password]
                 )
             #results = cur.fetchall()
             mysql.connection.commit()
@@ -315,7 +315,7 @@ def initRoutes(app, mysql):
         SDT = request.json.get('SDT')
         cur = mysql.connection.cursor()
         cur.execute(
-            'SELECT tv.HoTen, tv.id, u.role FROM THANHVIEN tv JOIN USERS u ON tv.id_user=u.id WHERE tv.CCCD = %s AND tv.SDT = %s', [CCCD,SDT]
+            'SELECT tv.HoTen, tv.id, u.MaVaiTro FROM THANHVIEN tv JOIN USERS u ON tv.id_user=u.id WHERE tv.CCCD = %s AND tv.SDT = %s', [CCCD,SDT]
         )
         results = cur.fetchall()
         print(results)
@@ -674,7 +674,7 @@ def initRoutes(app, mysql):
             else:
                 #Tạo tài khoản
                 cur.execute(
-                    'INSERT INTO USERS (CCCD,password,role) VALUES (%s,%s,user)', [CCCD,'1234']
+                    'INSERT INTO USERS (CCCD,password,MaVaiTro) VALUES (%s,%s,2)', [CCCD,'1234']
                 )
                 cur.connection.commit()
                 #Lấy id tài khoản
