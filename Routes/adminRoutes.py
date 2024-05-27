@@ -46,7 +46,7 @@ def initRoutes(app, mysql):
                 'SELECT FROM THANHVIEN tv JOIN USERS u ON tv.id_user=u.id WHERE tv.CCCD = %s', [CCCD]
             )
             cur.execute(
-                'SELECT tv.HoTen, tv.id, u.role FROM THANHVIEN tv JOIN USERS u ON tv.id_user=u.id WHERE tv.CCCD = %s', [CCCD]
+                'SELECT tv.HoTen, tv.id, u.MaVaiTro FROM THANHVIEN tv JOIN USERS u ON tv.id_user=u.id WHERE tv.CCCD = %s', [CCCD]
             )
             results = cur.fetchall()
             cur.close()
@@ -71,7 +71,7 @@ def initRoutes(app, mysql):
         
         #Tìm thành viên
         cur.execute(
-            'SELECT tv.HoTen, tv.id, u.role FROM THANHVIEN tv INNER JOIN USERS u ON tv.id_user=u.id WHERE tv.CCCD = %s', [cccd]
+            'SELECT tv.HoTen, tv.id, u.MaVaiTro FROM THANHVIEN tv INNER JOIN USERS u ON tv.id_user=u.id WHERE tv.CCCD = %s', [cccd]
         )
         results = cur.fetchall()
         session['cccd'] = cccd
@@ -396,7 +396,7 @@ def initRoutes(app, mysql):
         cur = mysql.connection.cursor()
         #Kiểm tra tên quê quán đã tồn tại chưa
         cur.execute(
-            'SELECT * FROM que_quan WHERE LOWER(TenQueQuan) = LOWER(%s)', [TenQueQuan])
+            'SELECT * FROM QUEQUAN WHERE LOWER(TenQueQuan) = LOWER(%s)', [TenQueQuan])
         result = cur.fetchone()
         
         if result:
@@ -647,7 +647,6 @@ def initRoutes(app, mysql):
 
     @app.route('/admin/AddMember', methods=['POST'])
     def admin_AddMember():
-        id = request.json.get('id')
         HoTen = request.json.get('HoTen')
         CCCD = request.json.get('CCCD')
         GioiTinh = request.json.get('GioiTinh') 
@@ -656,13 +655,15 @@ def initRoutes(app, mysql):
         MaNgheNghiep = request.json.get('MaNgheNghiep') 
         SDT = request.json.get('SDT') 
         DiaChi = request.json.get('DiaChi') 
-        id_tvc = request.json.get('id_tvc') 
+        id_tvc = request.json.get('idThanhVienCu') 
         MaQuanHe = request.json.get('MaQuanHe')
         NgayPhatSinh = request.json.get('NgayPhatSinh') 
         password = request.json.get('password')
         #Kiểm tra CCCD đã tồn tại chưa
+        print( HoTen, CCCD, GioiTinh, NgayGioSinh, MaQueQuan, MaNgheNghiep, SDT, DiaChi, id_tvc,"maqh:", MaQuanHe, NgayPhatSinh, password)
         cur = mysql.connection.cursor()
         if len(CCCD) != 12:
+            print("CCCD không hợp lệ")
             return jsonify({'EC': 2, 'EM': 'CCCD không hợp lệ'}), 400
         else:
             cur.execute(
@@ -670,9 +671,34 @@ def initRoutes(app, mysql):
             )
             temp= cur.fetchall()
             if temp !=():
+                print("CCCD đã tồn tại")
                 return jsonify({'EC': 1, 'EM': 'CCCD đã tồn tại'}), 400 #Đã tồn tại tài khoản
             else:
-                #Tạo tài khoản
+                #Lấy thông tin đời trước
+                cur.execute(
+                    'SELECT HoTen,id, Doi, GioiTinh, YEAR(NgayGioSinh) as namsinh FROM THANHVIEN WHERE id = %s', [id_tvc]
+                )
+                temp = cur.fetchall()
+                
+                if not temp:
+                    print("*1")
+                    return jsonify({'EC': 3, 'EM': 'Không tìm thấy đời trước'}), 408
+                elif (MaQuanHe == 2 and temp[0]['namsinh'] < int(NgayGioSinh.split('-')[0])): # con nhỏ hơn cha/mẹ
+                    print("*2")
+                    return jsonify({'EC': 4, 'EM': 'Ngày sinh không hợp lệ'}), 407
+                elif (MaQuanHe == 1 and temp[0]['GioiTinh'] == GioiTinh): # Cha/Mẹ phải khác giới
+                    print("*3")
+                    return jsonify({'EC': 5, 'EM': 'Giới tính không hợp lệ'}), 406
+                else:
+                    if (MaQuanHe == 1): 
+                        print("*4")
+                        Doi = temp[0]['Doi']
+                    elif (MaQuanHe == 2):
+                        Doi= temp[0]['Doi'] + 1
+                        print("***",Doi)
+                    print("Doi: ",Doi)
+
+                  #Tạo tài khoản
                 cur.execute(
                     'INSERT INTO USERS (CCCD,password,MaVaiTro) VALUES (%s,%s,2)', [CCCD,'1234']
                 )
@@ -682,21 +708,6 @@ def initRoutes(app, mysql):
                     'SELECT id FROM USERS WHERE CCCD = %s', [CCCD]
                 )
                 id_user = cur.fetchone()['id']
-                #Lấy thông tin đời trước
-                cur.execute(
-                    'SELECT * FROM THANHVIEN WHERE id = %s', [id_tvc]
-                )
-                temp = cur.fetchall()
-                if temp is ():
-                    return jsonify({'EC': 3, 'EM': 'Không tìm thấy đời trước'}), 404
-                elif (temp[0]['NgayGioSinh'] < NgayGioSinh and MaQuanHe == 2): # con nhỏ hơn cha/mẹ
-                    return jsonify({'EC': 4, 'EM': 'Ngày sinh không hợp lệ'}), 400
-                elif (MaQuanHe == 1 and temp[0]['GioiTinh'] == GioiTinh): # Cha/Mẹ phải khác giới
-                    return jsonify({'EC': 5, 'EM': 'Giới tính không hợp lệ'}), 400
-                elif (MaQuanHe == 1): 
-                    Doi = temp[0]['Doi']
-                elif (MaQuanHe == 2):
-                    Doi= temp[0]['Doi'] + 1
                 #Thêm thành viên
                 cur.execute(
                     'INSERT INTO THANHVIEN (HoTen,CCCD,Doi,GioiTinh,NgayGioSinh,MaQueQuan,MaNgheNghiep,SDT,DiaChi,id_tvc,MaQuanHe,NgayPhatSinh,id_user) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',[ HoTen,CCCD,Doi,GioiTinh,NgayGioSinh,MaQueQuan,MaNgheNghiep,SDT,DiaChi,id_tvc,MaQuanHe,NgayPhatSinh,id_user]
