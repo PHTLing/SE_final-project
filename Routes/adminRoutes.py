@@ -670,53 +670,70 @@ def initRoutes(app, mysql):
                 'SELECT * FROM USERS WHERE CCCD = %s', [CCCD]
             )
             temp= cur.fetchall()
-            if temp !=():
-                print("CCCD đã tồn tại")
-                return jsonify({'EC': 1, 'EM': 'CCCD đã tồn tại'}), 400 #Đã tồn tại tài khoản
-            else:
+            
+            if not temp :
                 #Lấy thông tin đời trước
                 cur.execute(
                     'SELECT HoTen,id, Doi, GioiTinh, YEAR(NgayGioSinh) as namsinh FROM THANHVIEN WHERE id = %s', [id_tvc]
                 )
                 temp = cur.fetchall()
-                
+                print("Doi trước: ",temp)
+                print ("!: ", temp[0]['namsinh'] > int(NgayGioSinh.split('-')[0]), "mqh: ", MaQuanHe, "gt: ", temp[0]['GioiTinh'], "gt2: ", GioiTinh)
                 if not temp:
                     print("*1")
-                    return jsonify({'EC': 3, 'EM': 'Không tìm thấy đời trước'}), 408
-                elif (MaQuanHe == 2 and temp[0]['namsinh'] < int(NgayGioSinh.split('-')[0])): # con nhỏ hơn cha/mẹ
-                    print("*2")
-                    return jsonify({'EC': 4, 'EM': 'Ngày sinh không hợp lệ'}), 407
-                elif (MaQuanHe == 1 and temp[0]['GioiTinh'] == GioiTinh): # Cha/Mẹ phải khác giới
-                    print("*3")
-                    return jsonify({'EC': 5, 'EM': 'Giới tính không hợp lệ'}), 406
+                    return jsonify({'EC': 3, 'EM': 'Không tìm thấy đời trước'}), 400
                 else:
-                    if (MaQuanHe == 1): 
-                        print("*4")
-                        Doi = temp[0]['Doi']
-                    elif (MaQuanHe == 2):
-                        Doi= temp[0]['Doi'] + 1
-                        print("***",Doi)
-                    print("Doi: ",Doi)
+                    print(MaQuanHe == 1 and temp[0]['GioiTinh'] == GioiTinh)
+                    if (MaQuanHe == '2' and temp[0]['namsinh'] > int(NgayGioSinh.split('-')[0])): # con nhỏ hơn cha/mẹ
+                        print("*2")
+                        return jsonify({'EC': 4, 'EM': 'Ngày sinh không hợp lệ'}), 407
+                    elif (MaQuanHe == '1' and temp[0]['GioiTinh'] == GioiTinh): # Cha/Mẹ phải khác giới
+                        print("*3")
+                        return jsonify({'EC': 5, 'EM': 'Giới tính không hợp lệ'}), 406
+                    else:
+                        if (MaQuanHe == '1'):
+                            Doi = temp[0]['Doi']
+                        elif (MaQuanHe == '2'):
+                            Doi= temp[0]['Doi'] + 1
+                            
 
-                  #Tạo tài khoản
-                cur.execute(
-                    'INSERT INTO USERS (CCCD,password,MaVaiTro) VALUES (%s,%s,2)', [CCCD,'1234']
-                )
-                cur.connection.commit()
-                #Lấy id tài khoản
-                cur.execute(
-                    'SELECT id FROM USERS WHERE CCCD = %s', [CCCD]
-                )
-                id_user = cur.fetchone()['id']
-                #Thêm thành viên
-                cur.execute(
-                    'INSERT INTO THANHVIEN (HoTen,CCCD,Doi,GioiTinh,NgayGioSinh,MaQueQuan,MaNgheNghiep,SDT,DiaChi,id_tvc,MaQuanHe,NgayPhatSinh,id_user) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',[ HoTen,CCCD,Doi,GioiTinh,NgayGioSinh,MaQueQuan,MaNgheNghiep,SDT,DiaChi,id_tvc,MaQuanHe,NgayPhatSinh,id_user]
-                )
-                mysql.connection.commit()
-                cur.execute(
-                    'SELECT * FROM THANHVIEN WHERE id = %s', [id]
-                )
-                results = cur.fetchall()
+                        #Tạo tài khoản
+                    cur.execute(
+                        'INSERT INTO USERS (CCCD,password,MaVaiTro) VALUES (%s,%s,2)', [CCCD,'1234']
+                    )
+                    cur.connection.commit()
+                    #Lấy id tài khoản
+                    cur.execute(
+                        'SELECT id FROM USERS WHERE CCCD = %s', [CCCD]
+                    )
+                    id_user = cur.fetchone()['id']
+                    #Thêm thành viên
+                    query_1 = "INSERT INTO THANHVIEN (HoTen,CCCD,Doi,GioiTinh,NgayGioSinh,SDT,DiaChi,id_tvc,MaQuanHe,NgayPhatSinh,id_user"
+                    query_2 = "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s"
+                    params = [HoTen,CCCD,Doi,GioiTinh,NgayGioSinh,SDT,DiaChi,id_tvc,MaQuanHe,NgayPhatSinh,id_user]
+                    
+                    if MaQueQuan != '':
+                        query_1 += ",MaQueQuan"
+                        query_2 += ",%s"
+                        params.append(f"%{MaQueQuan}%")
+                    if MaNgheNghiep != '':
+                        query_1 += ",MaNgheNghiep"
+                        query_2 += ",%s"
+                        params.append(f"%{MaNgheNghiep}%")
+                    query_1 += ")"
+                    query_2 += ")"
+                    query = query_1 + query_2
+                    print(query)
+                    print(params)
+                    cur.execute(
+                        query,params
+                    )
+                    mysql.connection.commit()
+            else: 
+                print("CCCD đã tồn tại")
+                return jsonify({'EC': 1, 'EM': 'CCCD đã tồn tại'}), 400 #Đã tồn tại tài khoản
+           
+                
         return jsonify({'EC':0,'EM':'Thêm thành viên thành công!', 'data':results}),200
     
 # Xóa thành tích, xóa ghi nhận kết thúc 
