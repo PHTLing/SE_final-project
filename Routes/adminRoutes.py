@@ -119,15 +119,31 @@ def initRoutes(app, mysql):
                 cur.execute(
                     'SELECT * FROM KETTHUC WHERE MaThanhVien = %s', [id]
                 )
-                item['NgayGioMat'] = cur.fetchone()['NgayGioMat']
+                kt= cur.fetchall()
+                print("die: ",kt)
+                item['NgayGioMat'] = kt[0]['NgayGioMat']
+                if isinstance(item['NgayGioMat'], datetime):
+                    formattedNGS = item['NgayGioMat'].strftime('%d/%m/%Y')
+                else:
+                    formattedNGS = None
+                item['NgayGioMat'] = formattedNGS
+                print(item['NgayGioMat'])
                 cur.execute(
-                    'SELECT TenNguyenNhan FROM NGUYENNHAN WHERE MaNguyenNhan = %s', [item['MaNguyenNhan']]
+                    'SELECT TenNguyenNhan FROM NGUYENNHAN WHERE MaNguyenNhan = %s', [kt[0]['MaNguyenNhan']]
                 )
-                item['NguyenNhan'] = cur.fetchone()['TenNguyenNhan']
+                temp= cur.fetchall()
+                print ("Nguyên nhân: ",temp)
+                if temp:
+                    item['NguyenNhan'] = temp[0]['TenNguyenNhan']
+                else: item['NguyenNhan'] = ''
                 cur.execute(
-                    'SELECT TenDiaDiemMaiTang FROM DIADIEMMAITANG WHERE MaDiaDiemMaiTang = %s', [item['MaDiaDiemMaiTang']]
+                    'SELECT TenDiaDiemMaiTang FROM DIADIEMMAITANG WHERE MaDiaDiemMaiTang = %s', [kt[0]['MaDiaDiemMaiTang']]
                 )
-                item['DiaDiemMaiTang'] = cur.fetchone()['TenDiaDiemMaiTang']
+                temp= cur.fetchall()
+                print ("Địa điểm: ",temp)
+                if temp:
+                    item['DiaDiemMaiTang'] =temp[0]['TenDiaDiemMaiTang']
+                else: item['DiaDiemMaiTang'] = ''
         print(results)   
         cur.close()
         
@@ -353,22 +369,25 @@ def initRoutes(app, mysql):
         )
         results = cur.fetchone()
         if results is None:
-            return jsonify({'EC': 1, 'EM': 'Không tìm thấy thành viên'}), 404
+            return jsonify({'EC': 1, 'EM': 'Không tìm thấy thành viên!'}), 404
         NgayGioMat = request.json.get('NgayGioMat')
+
         cur.execute(
-            'UPDATE THANHVIEN SET Status = 1 WHERE id = %s', [id]
+            'UPDATE THANHVIEN SET TrangThai = 1 WHERE id = %s', [id]
         )
         cur.execute(
             'INSERT INTO KETTHUC (MaThanhVien,NgayGioMat,MaNguyenNhan, MaDiaDiemMaiTang) VALUES (%s,%s,%s,%s)',[id,NgayGioMat,MaNguyenNhan,MaDiaDiemMaiTang]
         )
         mysql.connection.commit()
-        return jsonify({'EC': 0, 'EM':'Ghi nhận thành công'}), 200
+        return jsonify({'EC': 0, 'EM':'Ghi nhận thành công!'}), 200
     
     @app.route('/admin/AddAward', methods=['POST'])
     def admin_AddAward():
         id = request.json.get('id')
         MaLoaiThanhTich = request.json.get('MaLoaiThanhTich')
         NgayPhatSinh = request.json.get('NgayPhatSinh')
+        # print(id, MaLoaiThanhTich, NgayPhatSinh)
+        # NgayPhatSinh = datetime.strptime(NgayPhatSinh)
         print(id, MaLoaiThanhTich, NgayPhatSinh)
         cur = mysql.connection.cursor()
         if id == '':
@@ -508,10 +527,10 @@ def initRoutes(app, mysql):
         results = cur.fetchall()
         data=[]
         for i,item in enumerate(results):
-            #print ("=====================",i,"=====================")
+            print ("=====================",i,"=====================")
             temp = {}
             temp['name'] = item['HoTen']
-            #print(item['HoTen'])
+            print(item['HoTen'])
             temp['id'] = item['id']
             if item['GioiTinh'] == 'Nam':
                 temp['gender'] = 'male'
@@ -520,25 +539,8 @@ def initRoutes(app, mysql):
             temp['pids'] = []
             temp['fid'] =[]
             temp['mid'] = []
-            cur.execute(
-                'SELECT * FROM THANHVIEN WHERE id_tvc = %s and MaQuanHe=1', [item['id']]
-            )
-            #Tìm vợ/chồng
-            partner_1 = cur.fetchall()
-            #print("P1: ",partner_1 )
-            if partner_1 is ():
-                cur.execute(
-                    'SELECT * FROM THANHVIEN WHERE id = %s AND (MaQuanHe = 2 OR MaQuanHe IS NULL)', [item['id_tvc']]
-                )
-                partner_2 = cur.fetchall()
-                #print(partner_2)
-                if partner_2 is not (): 
-                    temp['pids'].append(partner_2[0]['id'])   
-            else:
-                temp['pids'].append(partner_1[0]['id'])
-            
-            #Tìm cha 
-            if item['MaQuanHe'] == 1:
+            #Tìm cha/ mẹ
+            if item['MaQuanHe'] == 1: # dâu rể -> rỗng
                 temp['fid'] = ''
                 temp['mid'] = ''
             else:
@@ -546,7 +548,7 @@ def initRoutes(app, mysql):
                     'SELECT * FROM THANHVIEN WHERE id = %s', [item['id_tvc']]
                 )
                 parent = cur.fetchall() 
-                #print("Pa: ",parent)
+                print("Pa: ",parent)
                 if parent is ():
                     temp['fid'] = ''
                 else:
@@ -556,11 +558,34 @@ def initRoutes(app, mysql):
                     'SELECT * FROM THANHVIEN WHERE id_tvc= %s and MaQuanHe=1', [item['id_tvc']]
                 )
                 parent_2 = cur.fetchall()
-                #print("Ma: ",parent_2)
+                print("Ma: ",parent_2)
                 if parent_2 is ():
                     temp['mid'] = ''
                 else:
                     temp['mid'] = parent_2[0]['id']
+
+            #Tìm vợ/chồng
+            #Con chính gốc
+            if item['MaQuanHe'] == 2 or item['MaQuanHe'] is None:      
+                cur.execute(
+                    'SELECT * FROM THANHVIEN WHERE id_tvc = %s and MaQuanHe=1', [item['id']]
+                )
+                partner_1 = cur.fetchall()
+                print("P1: ",partner_1)
+                if partner_1 is ():
+                    item['pids'] = ''
+                else: 
+                    temp['pids'].append(partner_1[0]['id'])
+            elif item['MaQuanHe'] == 1:
+                cur.execute(
+                    'SELECT * FROM THANHVIEN WHERE id = %s AND (MaQuanHe = 2 OR MaQuanHe IS NULL)', [item['id_tvc']]
+                )
+                partner_2 = cur.fetchall()
+                print("P2: ",partner_2)
+                if partner_2 is ():
+                    temp['pids'] = ''
+                else:    temp['pids'].append(partner_2[0]['id'])
+            #Chốt
             data.append(temp)
         print(data)
         return jsonify({'data':data}),200
@@ -620,7 +645,7 @@ def initRoutes(app, mysql):
         )
         results = cur.fetchall()
         cur.close()
-        return jsonify({'EC':0, 'EM':'Update successed!', 'data':results}),200
+        return jsonify({'EC':0, 'EM':'Thay đổi thông tin thành công!', 'data':results}),200
     
     @app.route('/admin/ChangePassword', methods=['POST'])
     def admin_ChangePassword():
@@ -660,6 +685,8 @@ def initRoutes(app, mysql):
         NgayPhatSinh = request.json.get('NgayPhatSinh') 
         password = request.json.get('password')
         #Kiểm tra CCCD đã tồn tại chưa
+
+        #NgayPhatSinh = datetime.strptime(NgayPhatSinh, '%Y-%m-%d')
         print( HoTen, CCCD, GioiTinh, NgayGioSinh, MaQueQuan, MaNgheNghiep, SDT, DiaChi, id_tvc,"maqh:", MaQuanHe, NgayPhatSinh, password)
         cur = mysql.connection.cursor()
         if len(CCCD) != 12:
@@ -715,11 +742,11 @@ def initRoutes(app, mysql):
                     if MaQueQuan != '':
                         query_1 += ",MaQueQuan"
                         query_2 += ",%s"
-                        params.append(f"%{MaQueQuan}%")
+                        params.append(int(MaQueQuan))
                     if MaNgheNghiep != '':
                         query_1 += ",MaNgheNghiep"
                         query_2 += ",%s"
-                        params.append(f"%{MaNgheNghiep}%")
+                        params.append(int(MaNgheNghiep))
                     query_1 += ")"
                     query_2 += ")"
                     query = query_1 + query_2
@@ -734,7 +761,7 @@ def initRoutes(app, mysql):
                 return jsonify({'EC': 1, 'EM': 'CCCD đã tồn tại'}), 400 #Đã tồn tại tài khoản
            
                 
-        return jsonify({'EC':0,'EM':'Thêm thành viên thành công!', 'data':results}),200
+        return jsonify({'EC':0,'EM':'Thêm thành viên thành công!'}),200
     
 # Xóa thành tích, xóa ghi nhận kết thúc 
     @app.route('/admin/DeleteAward', methods=['POST'])
@@ -762,53 +789,89 @@ def initRoutes(app, mysql):
 # Điều chỉnh các bảng phụ
     @app.route('/admin/DeleteQueQuan', methods=['POST'])
     def admin_DeleteQueQuan():
-        id = request.json.get('id')
+        id = request.json.get('MaQueQuan')
         cur = mysql.connection.cursor()
         cur.execute(
-            'DELETE FROM QUEQUAN WHERE MaQueQuan = %s', [id]
+            'SELECT * FROM THANHVIEN WHERE MaQueQuan = %s', [id]
         )
+        results = cur.fetchall()
+        if results:
+            return jsonify({'EC': 1, 'EM':'Không thể xóa quê quán này vì có thành viên liên quan!'})
+        else:
+            cur.execute(
+                'DELETE FROM QUEQUAN WHERE MaQueQuan = %s', [id]
+            )
         mysql.connection.commit()
         cur.close()
         return jsonify({'EC': 0, 'EM':'Xóa thành công!'}),200
     
     @app.route('/admin/DeleteNgheNghiep', methods=['POST'])
     def admin_DeleteNgheNghiep():
-        id = request.json.get('id')
+        id = request.json.get('MaNgheNghiep')
         cur = mysql.connection.cursor()
         cur.execute(
-            'DELETE FROM NGHENGHIEP WHERE MaNgheNghiep = %s', [id]
+            'SELECT * FROM THANHVIEN WHERE MaNgheNghiep = %s', [id]
         )
+        results = cur.fetchall()
+        if results:
+            return jsonify({'EC': 1, 'EM':'Không thể xóa nghề nghiệp này vì có thành viên liên quan!'})
+        else:
+            cur.execute(
+                'DELETE FROM NGHENGHIEP WHERE MaNgheNghiep = %s', [id]
+            )
         mysql.connection.commit()
         cur.close()
         return jsonify({'EC': 0, 'EM':'Xóa thành công!'}),200
     
     @app.route('/admin/DeleteNguyenNhan', methods=['POST'])
     def admin_DeleteNguyenNhan():
-        id = request.json.get('id')
+        id = request.json.get('MaNguyenNhan')
         cur = mysql.connection.cursor()
         cur.execute(
-            'DELETE FROM NGUYENNHAN WHERE MaNguyenNhan = %s', [id]
+            'SELECT * FROM KETTHUC WHERE MaNguyenNhan = %s', [id]
         )
+        results = cur.fetchall()
+        if results:
+            return jsonify({'EC': 1, 'EM':'Không thể xóa nguyên nhân này vì có thành viên liên quan!'})
+        else:
+            cur.execute(
+                'DELETE FROM NGUYENNHAN WHERE MaNguyenNhan = %s', [id]
+            )
         mysql.connection.commit()
         cur.close()
         return jsonify({'EC': 0, 'EM':'Xóa thành công!'}),200
     
     @app.route('/admin/DeleteDiaDiemMaiTang', methods=['POST'])
     def admin_DeleteDiaDiemMaiTang():
-        id = request.json.get('id')
+        id = request.json.get('MaDiaDiemMaiTang')
         cur = mysql.connection.cursor()
         cur.execute(
-            'DELETE FROM DIADIEMMAITANG WHERE MaDiaDiemMaiTang = %s', [id]
+            'SELECT * FROM KETTHUC WHERE MaDiaDiemMaiTang = %s', [id]
         )
+        results = cur.fetchall()
+        if results:
+            return jsonify({'EC': 1, 'EM':'Không thể xóa địa điểm mai táng này vì có thành viên liên quan!'})
+        else:
+            cur.execute(
+                'DELETE FROM DIADIEMMAITANG WHERE MaDiaDiemMaiTang = %s', [id]
+            )
         mysql.connection.commit()
         cur.close()
         return jsonify({'EC': 0, 'EM':'Xóa thành công!'}),200
     
     @app.route('/admin/DeleteLoaiThanhTich', methods=['POST'])
     def admin_DeleteLoaiThanhTich():
-        id = request.json.get('id')
+        id = request.json.get('MaLoaiThanhTich')
         cur = mysql.connection.cursor()
         cur.execute(
+            'SELECT * FROM THANHTICH WHERE MaLoaiThanhTich = %s', [id]
+        )
+        results = cur.fetchall()
+        print(results)
+        if results:
+            print("Ko xóa")
+            return jsonify({'EC': 1, 'EM':'Không thể xóa loại thành tích này vì có thành tích liên quan!'})
+        else: cur.execute(
             'DELETE FROM LOAITHANHTICH WHERE MaLoaiThanhTich = %s', [id]
         )
         mysql.connection.commit()
